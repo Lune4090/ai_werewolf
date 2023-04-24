@@ -1,10 +1,16 @@
 import time
 
 class GM_base():
-
-    def __init__(self, player_list: list, conversation_num: int) -> None:
-        self.role_list: list = ["村人", "人狼", "狂人", "騎士", "占い師", "村人"]
-        self.member_list: list = ["いっぺい", "にか", "はかな", "ごりた", "なり",  "あかり"]
+    
+    def __init__(self, players: list, conversation_num: int ,roles: list, names: list) -> None:
+        "set players to their names and roles"
+        if len(roles) != len(names):
+            raise ValueError("length of roles and that of names is different!!!")
+        if len(players) != len(names):
+            raise ValueError("length of players and that of names is different!!!")
+        self.role_list: list = roles
+        self.member_list: list = names
+        
         self.member_player_asssign_dict: dict = {}
         self.member_role_assign_dict: dict = {}
         self.role_member_assign_dict: dict = {}
@@ -12,7 +18,7 @@ class GM_base():
 
 
         for i in range(len(self.role_list)):
-            self.member_player_asssign_dict[self.member_list[i]] = player_list[i]
+            self.member_player_asssign_dict[self.member_list[i]] = players[i]
             self.member_role_assign_dict[self.member_list[i]] = self.role_list[i]
             self.role_member_assign_dict[self.role_list[i]] = self.member_list[i]
             self.member_voted_num_dict[self.member_list[i]] = 0
@@ -28,44 +34,6 @@ class GM_base():
 
         self.discussion_loop_num: int = conversation_num
 
-    def GM_start_declaration(self, name: str):
-        self.start_declaration_by_GM: str = \
-        """
-        人狼をしよう！
-        
-        人狼の大まかなルール説明をするね！
-        ・人狼は、役職ごとに陣営が分かれているよ！
-        ・人狼と狂人は人狼陣営、その他は村人陣営だよ！
-        ・人狼陣営の数が村人陣営より多くなれば人狼陣営の勝ち、人狼が全滅すれば村人陣営の勝ちだよ！
-
-        具体的な進行を説明するよ！
-        ・最初の夜のターンから始まって、最初の夜のターンには占い師のみが活動し、誰か一人を占うよ！
-        ・それが終わると一日目の昼のターンになって、皆で話し合いをするよ。話し合いの中で怪しい人を見つけてね！
-        ・話し合いが終わったら、誰を追放するか決める投票の時間になるよ！今いる人の中から追放する人を一人決めて答えてね！
-        ・それが終わると一日目の夜のターンになるよ。最初の夜と違って、占い師だけでなくて人狼と騎士も活動するよ！人狼は襲う人を、騎士は守る人を答えてね！
-        ・もしあなたが人狼なら騎士の守らなさそうな人を答えるといいよ！もしあなたが騎士なら人狼の襲いそうな人を答えるといいよ！
-        ・騎士の守る人が人狼の襲う人と合致すると、騎士が人狼の襲撃から守った、とみなされて誰も死なずに済むよ！そうでないと、襲われた人はそのターンに死亡してしまうよ！
-        ・殺されたり、追放されたりした人はゲームから脱落するよ！
-        ・これが終わると二日目の昼になるよ！
-        ・以降は勝敗が決まるまで、昼のターンと夜のターンを繰り返すよ！
-
-        人数と役職の設定は以下の通りだよ。
-        ・役職は"村人"、人狼"、"狂人"、"騎士"、"占い師"、の5種類だよ。
-        ・あなたは「%s」というプレイヤーだよ。その人になりきって発言してね。
-        ・発言するときは自分の名前を入れて発言するといいよ！
-        ・自分の名前を忘れないようにね！！！     
-        ・あなたの役職は「%s」だよ。
-
-        もう一度確認するよ。これから始まる人狼の中で、あなたは絶対に司会進行をしないでね！
-        あなたは一人のプレイヤーとして、「%s」というプレイヤーになりきってね。
-        さあ、始めよう！！！
-        """\
-        %(name, self.member_role_assign_dict[name], name)
-
-        self.start_declaration_by_GM = self.start_declaration_by_GM
-
-        return self.start_declaration_by_GM
-
     def night_session(self) -> None:
         self.day_num += 1
         member:str = ""
@@ -75,8 +43,9 @@ class GM_base():
             print()
             print("占い師は占う人を選んで下さい")
             while member == "":
-                self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].hear_GM_comments(comments="占う人を%s、%s、%s、%s、%s、%sから選んでください。選んだ名前のみ返答してください。"\
-                                                                                                      %(self.member_list[0], self.member_list[1], self.member_list[2], self.member_list[3], self.member_list[4], self.member_list[5]))
+                self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].hear_as_user(comments="占う人を%sから選んでください。\
+                                                                                                  選んだ名前のみ返答してください。"
+                                                                                                  %(self.member_list))
                 temp_comment: str = self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].think_and_say()
                 print(self.role_member_assign_dict["占い師"] + ":")
                 print(temp_comment)
@@ -85,14 +54,16 @@ class GM_base():
                         member = self.member_list[i]
                         break
                 print(member)
-                time.sleep(15)
+                time.sleep(20)
 
             if self.member_role_assign_dict[member] == "人狼":
                 print("%sさんは人狼です。"%(member))
-                self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].hear_GM_comments("%sさんは人狼です。"%(member))
+                self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].hear_as_user("%sさんは人狼です。"
+                                                                                                  %(member))
             else:
                 print("%sさんは人狼ではありません。"%(member))
-                self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].hear_GM_comments("%sさんは人狼ではありません。"%(member))
+                self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].hear_as_user("%sさんは人狼ではありません。"
+                                                                                                  %(member))
             member = ""
 
         else:
@@ -101,34 +72,40 @@ class GM_base():
 
             print("占い師は占う人を選んで下さい")
             while member == "":
-                self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].hear_GM_comments(comments="占う人を生存するプレイヤーから選んでください。選んだ名前のみ返答してください。")
+                self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].hear_as_user(comments="占う人を%sから選んでください。\
+                                                                                                  選んだ名前のみ返答してください。"
+                                                                                                  %(self.member_list))
                 temp_comment: str = self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].think_and_say()
                 for i in range(len(self.member_list)):
                     if self.member_list[i] in temp_comment:
                         member = self.member_list[i]
                         break
                 print(member)
-                time.sleep(15)
+                time.sleep(20)
 
             if self.member_role_assign_dict[member] == "人狼":
                 print("%sさんは人狼です。"%(member))
-                self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].hear_GM_comments("%sさんは人狼です。"%(member))
+                self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].hear_as_user("%sさんは人狼です。"
+                                                                                                  %(member))
             else:
                 print("%sさんは人狼ではありません。"%(member))
-                self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].hear_GM_comments("%sさんは人狼ではありません。"%(member))
+                self.member_player_asssign_dict[self.role_member_assign_dict["占い師"]].hear_as_user("%sさんは人狼ではありません。"
+                                                                                                  %(member))
             member = ""
 
             print("騎士は守る人を選んでください")
             print()
 
             while member == "":
-                self.member_player_asssign_dict[self.role_member_assign_dict["騎士"]].hear_GM_comments(comments="守る人を生存するプレイヤーから選んでください。選んだ名前のみ返答してください。")
+                self.member_player_asssign_dict[self.role_member_assign_dict["騎士"]].hear_as_user(comments="守る人を%sから選んでください。\
+                                                                                                 選んだ名前のみ返答してください。"
+                                                                                                  %(self.member_list))
                 temp_comment: str = self.member_player_asssign_dict[self.role_member_assign_dict["騎士"]].think_and_say()
                 for i in range(len(self.member_list)):
                     if self.member_list[i] in temp_comment:
                         member = self.member_list[i]
                         break
-                time.sleep(15)
+                time.sleep(20)
             self.defended_person = member
             member = ""
 
@@ -136,14 +113,16 @@ class GM_base():
             print()
 
             while member == "":
-                self.member_player_asssign_dict[self.role_member_assign_dict["人狼"]].hear_GM_comments(comments="襲う人を生存するプレイヤーから選んでください。選んだ名前のみ返答してください。")
+                self.member_player_asssign_dict[self.role_member_assign_dict["人狼"]].hear_as_user(comments="襲う人を%sから選んでください。\
+                                                                                                 選んだ名前のみ返答してください。"
+                                                                                                  %(self.member_list))
                 temp_comment: str = self.member_player_asssign_dict[self.role_member_assign_dict["人狼"]].think_and_say()
                 for i in range(len(self.member_list)):
                     if self.member_list[i] in temp_comment:
                         member = self.member_list[i]
                         break
                 print(member)
-                time.sleep(15)
+                time.sleep(20)
             self.invaded_person = member
             member = ""
 
@@ -159,9 +138,7 @@ class GM_base():
 
     def day_session(self) -> None:
         if self.day_num==0:
-            for member_name in self.member_list:
-                declaration = self.GM_start_declaration(member_name).replace("\n", "").replace(" ", "")
-                self.member_player_asssign_dict[member_name].hear_start_declaration(declaration)
+
             print("それではゲームを開始します")
             print()
 
@@ -177,13 +154,14 @@ class GM_base():
                 print()
                 self.is_defending_success = False
                 for member_name in self.member_player_asssign_dict.keys():
-                    self.member_player_asssign_dict[member_name].hear_GM_comments("防衛が成功し昨夜の犠牲者は居ませんでした")
+                    self.member_player_asssign_dict[member_name].hear_as_user("防衛が成功し昨夜の犠牲者は居ませんでした")
 
             else:
                 print("防衛は失敗し%sさんが亡くなりました"%(self.invaded_person))
                 print()
                 for member_name in self.member_player_asssign_dict.keys():
-                    self.member_player_asssign_dict[member_name].hear_GM_comments("防衛は失敗し%sさんが亡くなりました"%(self.invaded_person))
+                    self.member_player_asssign_dict[member_name].hear_as_user("防衛は失敗し%sさんが亡くなりました"
+                                                                              %(self.invaded_person))
             self.defended_person
             self.invaded_person = None
 
@@ -192,12 +170,12 @@ class GM_base():
             self.surviver_log: str = "現在の生存者は"
             for i in range (len(self.member_list)):
                 self.surviver_log = self.surviver_log + self.member_list[i] + " さん、"
-            self.surviver_log = self.surviver_log + "です。各プレイヤーは、現在の状況を踏まえてプレイヤーとして発言を始めてください。司会進行は行わないでください。"
+            self.surviver_log = self.surviver_log + "です。現在の状況を踏まえて発言を始めてください。"
             print(self.surviver_log)
             print()
             for member_name in self.member_player_asssign_dict.keys():
-                self.member_player_asssign_dict[member_name].clear_mem()
-                self.member_player_asssign_dict[member_name].hear_GM_comments(self.surviver_log)
+                self.member_player_asssign_dict[member_name].forget_mem()
+                self.member_player_asssign_dict[member_name].hear_as_user(self.surviver_log)
                 
 
 
@@ -210,8 +188,8 @@ class GM_base():
                     print()
                     for member_name in self.member_player_asssign_dict.keys():
                         if member_name != speaker_name:
-                            self.member_player_asssign_dict[member_name].hear_other_agents_comments(comment)
-                    time.sleep(15)
+                            self.member_player_asssign_dict[member_name].hear_as_assistant(comment)
+                    time.sleep(20)
 
 
 
@@ -221,7 +199,10 @@ class GM_base():
                 print(member_name + "さんの投票")
                 temp_exile_member = ""
                 while temp_exile_member == "":
-                    self.member_player_asssign_dict[member_name].hear_GM_comments(comments="今日、誰をこの村から追放するかを決める投票の時間です。今までの議論をもとに追放する人を生存するプレイヤーから選んでください。選んだ名前のみ返答してください。")
+                    self.member_player_asssign_dict[member_name].hear_as_user(comments="今日、誰をこの村から追放するかを決める投票の時間です。\
+                                                                              今までの議論をもとに追放する人を%sから選んでください。\
+                                                                              選んだ名前のみ返答してください。"
+                                                                            %(self.member_list))
                     temp_comment = self.member_player_asssign_dict[self.role_member_assign_dict["人狼"]].think_and_say()
                     print(temp_comment)
 
@@ -231,8 +212,7 @@ class GM_base():
                             break
                         
                     print(temp_exile_member)
-                    #print(self.member_player_asssign_dict[member_name].memory)
-                    time.sleep(15)
+                    time.sleep(20)
 
                 self.member_voted_num_dict[temp_exile_member] += 1
             max_voted_num: int = 0
@@ -258,12 +238,13 @@ class GM_base():
 
                 print("投票の結果%s さんが村から追放されました。"%(temp_exiled_member))
                 for member_name in self.member_player_asssign_dict.keys():
-                    self.member_player_asssign_dict[member_name].hear_GM_comments("投票の結果%s さんが村から追放されました。"%(temp_exiled_member))
+                    self.member_player_asssign_dict[member_name].hear_as_user("投票の結果%s さんが村から追放されました。"\
+                                                                              %(temp_exiled_member))
 
             else:
                 print("投票は拮抗したため誰も村から追放されませんでした。")
                 for member_name in self.member_player_asssign_dict.keys():
-                    self.member_player_asssign_dict[member_name].hear_GM_comments("投票は拮抗したため誰も村から追放されませんでした。")
+                    self.member_player_asssign_dict[member_name].hear_as_user("投票は拮抗したため誰も村から追放されませんでした。")
             
             "Initialize voting"
             max_voted_mans = []
