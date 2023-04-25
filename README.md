@@ -7,9 +7,7 @@ LLMないしAPIの都合上、通信するたびに過去の内容をリセッ�
 # 各ファイルの説明
   
 ## pseudo_personality_base
-  　そのままでは人格がなく、記憶ができないOpenAIのAPI経由でのLLMへの接続に
-   それらを持たせる為のクラスである、○○_pseudo_personalityクラスの基底クラスの
-   pseudo_personality_base()を格納。
+  　基底クラスのpseudo_personality_base()を格納。
    
    クラスのメソッドは下記の通り。
    
